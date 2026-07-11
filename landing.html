@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Debrief — The Log</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg: #14151B;
+    --bg-page: #1A1C23;
+    --paper: #E8E3D8;
+    --paper-dim: #9B968A;
+    --brass: #B89A5C;
+    --brass-bright: #CDB578;
+    --rust: #A8543E;
+    --line: #33353F;
+    --line-soft: #2A2C34;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    background: var(--bg);
+    color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  .grain{
+    position: fixed; inset:0; pointer-events:none; z-index: 5; opacity: 0.035; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .wrap{ max-width: 680px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 2; }
+
+  /* ---------- STATIC HERO / MASTHEAD ---------- */
+  .hero-static{ padding: 56px 0 60px; }
+  .masthead-row{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 10px; }
+  .wordmark{ font-family: 'Spectral', serif; font-weight: 600; font-size: 1.15rem; letter-spacing: 0.02em; }
+  .wordmark .the{ color: var(--paper-dim); font-weight: 400; font-style: italic; }
+  .masthead-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.04em; }
+
+  .hero-static-body{ padding-top: 40px; }
+  .hero-kicker{
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 18px; display:flex; align-items:center; gap: 10px;
+  }
+  .hero-kicker::before{ content:''; width:6px; height:6px; border-radius:50%; background: var(--brass); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+  h1{
+    font-family: 'Spectral', serif; font-weight: 600; font-size: clamp(2.1rem, 6vw, 3.6rem);
+    line-height: 1.14; letter-spacing: -0.005em; margin-bottom: 20px; max-width: 14ch;
+  }
+  h1 em{ font-style: italic; color: var(--brass-bright); font-weight: 500; }
+  .hero-body{ font-size: 1.05rem; color: var(--paper-dim); line-height: 1.65; max-width: 46ch; margin-bottom: 8px; }
+  .hero-body strong{ color: var(--paper); font-weight: 500; }
+
+  /* ---------- LOG SECTION (below hero) ---------- */
+  .rule{ position: fixed; top:0; bottom:0; width:1px; background: var(--line); z-index:1; }
+  .rule.left{ left: calc(50% - 340px - 32px); }
+  .rule.right{ left: calc(50% + 340px + 32px); }
+  @media (max-width: 780px){ .rule{ display:none; } }
+
+  .masthead-rule{ border: none; border-top: 3px double var(--line); margin: 0 0 44px; }
+
+  .intro-kicker{
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 18px;
+  }
+  h2{
+    font-family: 'Spectral', serif; font-weight: 600; font-size: clamp(1.7rem, 3.5vw, 2.3rem);
+    margin-bottom: 22px; max-width: 18ch; letter-spacing: -0.01em;
+  }
+  .lede{ font-size: 1.02rem; color: var(--paper-dim); max-width: 50ch; line-height: 1.65; margin-bottom: 8px; }
+
+  .log{ padding: 30px 0 10px; }
+  .entry{ padding: 30px 0; border-bottom: 1px dashed var(--line); }
+  .entry-head{ display:flex; align-items: baseline; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .entry-num{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.06em; }
+  .entry-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.06em; }
+  .entry-said{
+    font-family: 'Spectral', serif; font-size: 1.15rem; font-style: italic; color: var(--paper);
+    line-height: 1.6; margin-bottom: 16px; max-width: 46ch;
+  }
+  .entry-note{ display:flex; gap: 10px; align-items: flex-start; border-left: 2px solid var(--rust); margin-left: 2px; padding: 4px 0 4px 16px; }
+  .entry-note .mark{ font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--rust); letter-spacing: 0.08em; text-transform: uppercase; white-space:nowrap; padding-top: 2px;}
+  .entry-note p{ font-size: 0.94rem; color: var(--paper); line-height: 1.55; }
+
+  .debrief-combined{
+    margin: 8px 0 40px; padding: 30px 28px; border: 1px solid var(--rust); border-radius: 6px;
+    background: linear-gradient(180deg, rgba(168,84,62,0.08), rgba(168,84,62,0.02));
+  }
+  .dc-head{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+  .dc-tag{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--rust); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+  .dc-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.05em; }
+  .dc-body{ font-family:'Spectral', serif; font-size: 1.1rem; color: var(--paper); line-height: 1.7; max-width: 50ch; }
+
+  .your-entry{ padding: 44px 0 50px; }
+  .your-entry-head{ display:flex; align-items: baseline; gap: 14px; margin-bottom: 16px; }
+  .your-entry-num{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass-bright); letter-spacing: 0.06em; }
+  .your-entry-tag{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+  .prompt-line{ font-family:'Spectral', serif; font-size: 1.15rem; font-style: italic; color: var(--paper-dim); margin-bottom: 22px; max-width: 44ch; line-height: 1.5; }
+
+  .log-form{ border: 1px solid var(--line); border-radius: 4px; background: var(--bg-page); padding: 4px; }
+  .form-inner{ display:flex; align-items:stretch; }
+  .form-inner .at{ font-family:'IBM Plex Mono', monospace; color: var(--paper-dim); padding: 15px 4px 15px 16px; font-size: 0.95rem; }
+  input[type=email]{
+    flex: 1; min-width: 0; background: transparent; border: none; color: var(--paper);
+    padding: 15px 12px; font-size: 0.98rem; font-family: 'IBM Plex Mono', monospace; outline: none;
+  }
+  input[type=email]::placeholder{ color: var(--paper-dim); opacity: 0.6; }
+  button{
+    background: var(--brass); color: #14151B; border:none; padding: 0 26px; border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.04em;
+    text-transform: uppercase; cursor: pointer; transition: background .2s; margin: 4px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  button:hover{ background: var(--brass-bright); }
+  button:focus-visible, input:focus-visible{ outline: 2px solid var(--brass-bright); outline-offset: 2px; }
+  .form-note{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--paper-dim); letter-spacing: 0.03em; margin-top: 12px; }
+
+  @media (max-width: 420px){
+    .form-inner{ flex-direction: column; }
+    .form-inner .at{ display:none; }
+    input[type=email]{ padding: 13px 14px; }
+    button{ margin: 0; padding: 13px; }
+  }
+  .success-msg{ display:none; align-items:center; gap: 8px; color: var(--brass-bright); font-size: 0.92rem; margin-top: 16px; font-family:'IBM Plex Mono', monospace; }
+  .success-msg.show{ display:flex; }
+
+  .margin-notes{ padding: 10px 0 50px; }
+  .mn-kicker{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 30px; }
+  .mn-row{ display:grid; grid-template-columns: 32px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid var(--line-soft); }
+  .mn-row:first-of-type{ border-top: none; }
+  .mn-mark{ font-family:'Spectral', serif; font-style: italic; color: var(--brass); font-size: 1.2rem; padding-top: 2px; }
+  .mn-body h3{ font-family:'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 1rem; margin-bottom: 6px; }
+  .mn-body p{ font-size: 0.92rem; color: var(--paper-dim); line-height: 1.6; max-width: 46ch; }
+
+  footer{
+    padding: 34px 0 60px; border-top: 3px double var(--line);
+    display:flex; justify-content: space-between; align-items:center; flex-wrap: wrap; gap: 14px;
+  }
+  .footer-mark{ font-family:'Spectral', serif; font-style: italic; font-size: 0.9rem; color: var(--paper-dim); }
+  .footer-stamp{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--paper-dim); }
+
+  ::selection{ background: var(--brass); color: #14151B; }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="rule left"></div>
+<div class="rule right"></div>
+
+<section class="hero-static">
+  <div class="wrap">
+    <div class="masthead-row">
+      <div class="wordmark">NIGHT <span class="the">Debrief</span></div>
+      <div class="masthead-meta">IN DEVELOPMENT · COMING 2026</div>
+    </div>
+    <hr class="masthead-rule">
+
+    <div class="hero-static-body">
+      <div class="hero-kicker">The idea</div>
+      <h1>A log of your day.<br>Kept <em>honestly</em>.</h1>
+      <p class="hero-body">Every night, you talk. It writes it down — then tells you what it actually heard. <strong>Not a diary. A record with an editor who won't let things slide.</strong></p>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <section style="padding: 60px 0 10px;">
+    <div class="intro-kicker">The record</div>
+    <h2>One session. Three questions. Five minutes, before bed.</h2>
+    <p class="lede">Every night it asks you three things. The first one holds you to what you said yesterday. The other two are new. That's the whole ritual.</p>
+  </section>
+
+  <section class="log" aria-label="One night's session, three questions">
+    <div class="entry">
+      <div class="entry-head"><span class="entry-num">Q1 — FOLLOWS UP ON LAST NIGHT</span><span class="entry-date">MAR 14, 11:41 PM</span></div>
+      <p class="entry-said">"Yesterday you said you'd hit the gym before the deck. Did that happen?"<br><em style="opacity:0.7; font-size:0.92em;">— "...no. Deck ran long, told myself I'd go tomorrow instead."</em></p>
+    </div>
+    <div class="entry">
+      <div class="entry-head"><span class="entry-num">Q2 — NEW</span><span class="entry-date">MAR 14, 11:43 PM</span></div>
+      <p class="entry-said">"What's one thing today that actually went the way you wanted?"<br><em style="opacity:0.7; font-size:0.92em;">— "...honestly, the client call. Went better than I expected."</em></p>
+    </div>
+    <div class="entry">
+      <div class="entry-head"><span class="entry-num">Q3 — NEW</span><span class="entry-date">MAR 14, 11:45 PM</span></div>
+      <p class="entry-said">"What are you telling yourself about tomorrow, right now?"<br><em style="opacity:0.7; font-size:0.92em;">— "...that tomorrow's the real start. Like today wasn't."</em></p>
+    </div>
+  </section>
+
+  <section class="debrief-combined">
+    <div class="dc-head">
+      <span class="dc-tag">Combined Debrief</span>
+      <span class="dc-date">MAR 14 — TONIGHT'S SESSION</span>
+    </div>
+    <p class="dc-body">This is the second night in a row the gym plan moved to "tomorrow." Notice the pattern: you're good at showing up for other people — the call went well because someone else was waiting on you. The gym has no one waiting. That's worth sitting with before you make tomorrow's promise.</p>
+  </section>
+
+  <section class="your-entry">
+    <div class="your-entry-head"><span class="your-entry-num">ENTRY 000</span><span class="your-entry-tag">— Yours, whenever you're ready</span></div>
+    <p class="prompt-line">This could be your log. Leave your address, and we'll open it when it's ready.</p>
+    <form class="log-form" id="waitlistForm">
+      <div class="form-inner">
+        <span class="at">➜</span>
+        <input type="email" id="emailInput" placeholder="you@email.com" required aria-label="Email address">
+        <button type="submit">Reserve entry</button>
+      </div>
+    </form>
+    <p class="form-note">NO SPAM. ONE NOTE, WHEN IT'S LIVE.</p>
+    <div class="success-msg" id="successMsg">✓ Logged. Your entry's reserved — we'll write when it's ready.</div>
+  </section>
+
+  <section class="margin-notes">
+    <div class="mn-kicker">Marginalia — how it works</div>
+    <div class="mn-row"><div class="mn-mark">i.</div><div class="mn-body"><h3>Talk, don't type</h3><p>Open it before bed and say what happened. No blank page. No prompts to overthink.</p></div></div>
+    <div class="mn-row"><div class="mn-mark">ii.</div><div class="mn-body"><h3>It writes the entry</h3><p>Your rambling becomes a clean, dated record automatically — the log you'd never bother keeping by hand.</p></div></div>
+    <div class="mn-row"><div class="mn-mark">iii.</div><div class="mn-body"><h3>It reads between the lines</h3><p>Across entries, it catches what repeats — and says so, in the margin, in plain language. No charts. Just the truth.</p></div></div>
+  </section>
+
+  <footer>
+    <div class="footer-mark">Kept nightly. Read honestly.</div>
+    <div class="footer-stamp">© 2026 — NIGHT DEBRIEF</div>
+  </footer>
+
+</div>
+
+
+<script>
+  function wireForm(formId, inputId, successId) {
+    const form = document.getElementById(formId);
+    const success = document.getElementById(successId);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById(inputId).value;
+      if (!email) return;
+      try {
+        const key = 'waitlist:' + email.toLowerCase().trim();
+        await window.storage.set(key, JSON.stringify({ email, joinedAt: new Date().toISOString() }), true);
+      } catch (err) {
+        console.error('Storage error:', err);
+      }
+      form.style.display = 'none';
+      success.classList.add('show');
+    });
+  }
+  wireForm('waitlistForm', 'emailInput', 'successMsg');
+</script>
+
+</body>
+</html>
+
