@@ -83,14 +83,22 @@
   .lede{ font-size: 1.02rem; color: var(--paper-dim); max-width: 50ch; line-height: 1.65; margin-bottom: 8px; }
 
   .log{ padding: 30px 0 10px; }
+  .log-hint{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.04em; margin-bottom: 6px; }
   .entry{ padding: 30px 0; border-bottom: 1px dashed var(--line); }
+  .entry-clickable{ cursor: pointer; transition: background 0.2s; border-radius: 4px; }
+  .entry-clickable:hover, .entry-clickable:focus-visible{ background: var(--line-soft); outline: none; }
   .entry-head{ display:flex; align-items: baseline; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
   .entry-num{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.06em; }
   .entry-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.06em; }
   .entry-said{
     font-family: 'Spectral', serif; font-size: 1.15rem; font-style: italic; color: var(--paper);
-    line-height: 1.6; margin-bottom: 16px; max-width: 46ch;
+    line-height: 1.6; margin-bottom: 10px; max-width: 46ch;
   }
+  .entry-answer{
+    font-family: 'Spectral', serif; font-size: 0.92em; font-style: italic; color: var(--paper-dim);
+    line-height: 1.6; max-width: 46ch; opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease, max-height 0.3s ease;
+  }
+  .entry-clickable.revealed .entry-answer{ opacity: 0.85; max-height: 100px; margin-bottom: 4px; }
   .entry-note{ display:flex; gap: 10px; align-items: flex-start; border-left: 2px solid var(--rust); margin-left: 2px; padding: 4px 0 4px 16px; }
   .entry-note .mark{ font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--rust); letter-spacing: 0.08em; text-transform: uppercase; white-space:nowrap; padding-top: 2px;}
   .entry-note p{ font-size: 0.94rem; color: var(--paper); line-height: 1.55; }
@@ -98,10 +106,12 @@
   .debrief-combined{
     margin: 8px 0 40px; padding: 30px 28px; border: 1px solid var(--rust); border-radius: 6px;
     background: linear-gradient(180deg, rgba(168,84,62,0.08), rgba(168,84,62,0.02));
+    transition: opacity 0.3s;
   }
   .dc-head{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
   .dc-tag{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--rust); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
   .dc-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.05em; }
+  .dc-hint{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--paper-dim); font-style: italic; }
   .dc-body{ font-family:'Spectral', serif; font-size: 1.1rem; color: var(--paper); line-height: 1.7; max-width: 50ch; }
 
   .your-entry{ padding: 44px 0 50px; }
@@ -171,8 +181,8 @@
 
     <div class="hero-static-body">
       <div class="hero-kicker">The idea</div>
-      <h1>A log of your day.<br>Kept <em>honestly</em>.</h1>
-      <p class="hero-body">Every night, you talk. It writes it down — then tells you what it actually heard. <strong>Not a diary. A record with an editor who won't let things slide.</strong></p>
+      <h1>Say what you'll do.<br>Get <em>held to it</em>.</h1>
+      <p class="hero-body">Every night, it asks if you did the thing you said you'd do yesterday. Then it listens to your day. <strong>Five minutes of talking becomes a record that actually remembers.</strong></p>
     </div>
   </div>
 </section>
@@ -186,26 +196,31 @@
   </section>
 
   <section class="log" aria-label="One night's session, three questions">
-    <div class="entry">
+    <p class="log-hint">Tap each question to hear how a real session plays out.</p>
+    <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
       <div class="entry-head"><span class="entry-num">Q1 — FOLLOWS UP ON LAST NIGHT</span><span class="entry-date">MAR 14, 11:41 PM</span></div>
-      <p class="entry-said">"Yesterday you said you'd hit the gym before the deck. Did that happen?"<br><em style="opacity:0.7; font-size:0.92em;">— "...no. Deck ran long, told myself I'd go tomorrow instead."</em></p>
+      <p class="entry-said">"Yesterday you said you'd hit the gym before the deck. Did that happen?"</p>
+      <p class="entry-answer">— "...no. Deck ran long, told myself I'd go tomorrow instead."</p>
     </div>
-    <div class="entry">
+    <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
       <div class="entry-head"><span class="entry-num">Q2 — NEW</span><span class="entry-date">MAR 14, 11:43 PM</span></div>
-      <p class="entry-said">"What's one thing today that actually went the way you wanted?"<br><em style="opacity:0.7; font-size:0.92em;">— "...honestly, the client call. Went better than I expected."</em></p>
+      <p class="entry-said">"What's one thing today that actually went the way you wanted?"</p>
+      <p class="entry-answer">— "...honestly, the client call. Went better than I expected."</p>
     </div>
-    <div class="entry">
+    <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
       <div class="entry-head"><span class="entry-num">Q3 — NEW</span><span class="entry-date">MAR 14, 11:45 PM</span></div>
-      <p class="entry-said">"What are you telling yourself about tomorrow, right now?"<br><em style="opacity:0.7; font-size:0.92em;">— "...that tomorrow's the real start. Like today wasn't."</em></p>
+      <p class="entry-said">"What are you telling yourself about tomorrow, right now?"</p>
+      <p class="entry-answer">— "...that tomorrow's the real start. Like today wasn't."</p>
     </div>
   </section>
 
-  <section class="debrief-combined">
+  <section class="debrief-combined" id="debriefSection">
     <div class="dc-head">
       <span class="dc-tag">Combined Debrief</span>
       <span class="dc-date">MAR 14 — TONIGHT'S SESSION</span>
     </div>
-    <p class="dc-body">This is the second night in a row the gym plan moved to "tomorrow." Notice the pattern: you're good at showing up for other people — the call went well because someone else was waiting on you. The gym has no one waiting. That's worth sitting with before you make tomorrow's promise.</p>
+    <p class="dc-hint" id="dcHint">↑ Tap all three questions above to unlock tonight's debrief.</p>
+    <p class="dc-body" id="dcBody" style="display:none;">This is the second night in a row the gym plan moved to "tomorrow." Notice the pattern: you're good at showing up for other people — the call went well because someone else was waiting on you. The gym has no one waiting. That's worth sitting with before you make tomorrow's promise.</p>
   </section>
 
   <section class="your-entry">
@@ -225,8 +240,9 @@
   <section class="margin-notes">
     <div class="mn-kicker">Marginalia — how it works</div>
     <div class="mn-row"><div class="mn-mark">i.</div><div class="mn-body"><h3>Talk, don't type</h3><p>Open it before bed and say what happened. No blank page. No prompts to overthink.</p></div></div>
-    <div class="mn-row"><div class="mn-mark">ii.</div><div class="mn-body"><h3>It writes the entry</h3><p>Your rambling becomes a clean, dated record automatically — the log you'd never bother keeping by hand.</p></div></div>
+    <div class="mn-row"><div class="mn-mark">ii.</div><div class="mn-body"><h3>It remembers so you don't have to</h3><p>A notebook doesn't ask what happened to yesterday's plan. This does — every night, automatically, without you re-reading old pages.</p></div></div>
     <div class="mn-row"><div class="mn-mark">iii.</div><div class="mn-body"><h3>It reads between the lines</h3><p>Across entries, it catches what repeats — and says so, in the margin, in plain language. No charts. Just the truth.</p></div></div>
+    <div class="mn-row"><div class="mn-mark">iv.</div><div class="mn-body"><h3>Yours, and only yours</h3><p>What you say stays in your log. Not sold, not shared, not used to train anything beyond your own record.</p></div></div>
   </section>
 
   <footer>
@@ -256,6 +272,31 @@
     });
   }
   wireForm('waitlistForm', 'emailInput', 'successMsg');
+
+  // Click-to-reveal log entries; unlock combined debrief once all three are opened
+  const entries = document.querySelectorAll('.entry-clickable');
+  const dcBody = document.getElementById('dcBody');
+  const dcHint = document.getElementById('dcHint');
+
+  function checkAllRevealed() {
+    const allRevealed = Array.from(entries).every(e => e.classList.contains('revealed'));
+    if (allRevealed) {
+      dcHint.style.display = 'none';
+      dcBody.style.display = 'block';
+    }
+  }
+
+  entries.forEach(entry => {
+    const toggle = () => {
+      const isRevealed = entry.classList.toggle('revealed');
+      entry.setAttribute('aria-expanded', isRevealed);
+      checkAllRevealed();
+    };
+    entry.addEventListener('click', toggle);
+    entry.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
 </script>
 
 </body>
