@@ -454,6 +454,7 @@ h2 {
   border-bottom: 1px solid var(--border);
   border-radius: 10px;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   padding: 26px 16px;
   margin: 0 -16px;
   position: relative;
