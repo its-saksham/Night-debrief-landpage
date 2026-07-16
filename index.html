@@ -1,306 +1,856 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Night Debrief — The Log</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Night Debrief — The Log</title>
+  <meta name="description" content="Say what you'll do. Get held to it. A voice-first nightly journal, coming soon." />
 
-  :root{
-    --bg: #14151B;
-    --bg-page: #1A1C23;
-    --paper: #E8E3D8;
-    --paper-dim: #9B968A;
-    --brass: #B89A5C;
-    --brass-bright: #CDB578;
-    --rust: #A8543E;
-    --line: #33353F;
-    --line-soft: #2A2C34;
-  }
+  <!-- Satoshi via Fontshare -->
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,600,500,400&display=swap" rel="stylesheet" />
+  <!-- JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
 
-  *{ margin:0; padding:0; box-sizing:border-box; }
-  html{ scroll-behavior: smooth; }
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
-  body{
-    background: var(--bg);
-    color: var(--paper);
-    font-family: 'IBM Plex Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
+    :root {
+      --bg:           #0a0c10;
+      --surface:      #111318;
+      --surface-2:    #171b22;
+      --surface-3:    #1c2029;
+      --border:       rgba(255,255,255,0.06);
+      --border-soft:  rgba(255,255,255,0.04);
+      --border-hover: rgba(255,255,255,0.11);
+      --text-primary:   #f0eeeb;
+      --text-secondary: #8a8f9a;
+      --text-muted:     #4e535f;
+      --accent:         #10b981;
+      --accent-dim:     rgba(16,185,129,0.10);
+      --accent-glow:    rgba(16,185,129,0.20);
+      --accent-border:  rgba(16,185,129,0.22);
+      --warn:           #d97706;
+      --warn-dim:       rgba(217,119,6,0.10);
+      --font-sans: 'Satoshi', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
-  }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
 
-  .grain{
-    position: fixed; inset:0; pointer-events:none; z-index: 5; opacity: 0.035; mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
+    body {
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      min-height: 100dvh;
+    }
 
-  .wrap{ max-width: 680px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 2; }
+    /* ── Grain overlay ────────────────────────────── */
+    .grain {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 5;
+      opacity: 0.032; mix-blend-mode: overlay;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
 
-  /* ---------- STATIC HERO / MASTHEAD ---------- */
-  .hero-static{ padding: 56px 0 60px; }
-  .masthead-row{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 10px; }
-  .wordmark{ font-family: 'Spectral', serif; font-weight: 600; font-size: 1.15rem; letter-spacing: 0.02em; }
-  .wordmark .the{ color: var(--paper-dim); font-weight: 400; font-style: italic; }
-  .masthead-meta{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.04em; }
+    /* ── Mesh blobs (fixed, pointer-none, GPU-safe) ── */
+    .mesh-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .mesh-blob {
+      position: absolute; border-radius: 50%;
+      filter: blur(110px); opacity: 0.12;
+      animation: drift 16s ease-in-out infinite alternate;
+    }
+    .mesh-blob:nth-child(1) { width: 540px; height: 540px; background: #10b981; top: -180px; left: -120px; animation-delay: 0s; }
+    .mesh-blob:nth-child(2) { width: 420px; height: 420px; background: #0d9488; top: 45%; right: -140px; animation-delay: -6s; }
+    .mesh-blob:nth-child(3) { width: 360px; height: 360px; background: #1e293b; bottom: -80px; left: 30%; animation-delay: -11s; }
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(36px, 28px) scale(1.07); }
+    }
 
-  .hero-static-body{ padding-top: 40px; }
-  .hero-kicker{
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.12em;
-    text-transform: uppercase; margin-bottom: 18px; display:flex; align-items:center; gap: 10px;
-  }
-  .hero-kicker::before{ content:''; width:6px; height:6px; border-radius:50%; background: var(--brass); animation: pulse 2s ease-in-out infinite; }
-  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    /* ── Side rules ────────────────────────────────── */
+    .rule {
+      position: fixed; top: 0; bottom: 0; width: 1px;
+      background: var(--border); z-index: 1;
+    }
+    .rule.left  { left:  calc(50% - 340px - 40px); }
+    .rule.right { left:  calc(50% + 340px + 40px); }
+    @media (max-width: 820px) { .rule { display: none; } }
 
-  h1{
-    font-family: 'Spectral', serif; font-weight: 600; font-size: clamp(2.1rem, 6vw, 3.6rem);
-    line-height: 1.14; letter-spacing: -0.005em; margin-bottom: 20px; max-width: 14ch;
-  }
-  h1 em{ font-style: italic; color: var(--brass-bright); font-weight: 500; }
-  .hero-body{ font-size: 1.05rem; color: var(--paper-dim); line-height: 1.65; max-width: 46ch; margin-bottom: 8px; }
-  .hero-body strong{ color: var(--paper); font-weight: 500; }
+    /* ── Layout ────────────────────────────────────── */
+    .wrap {
+      max-width: 680px; margin: 0 auto;
+      padding: 0 40px; position: relative; z-index: 2;
+    }
+    @media (max-width: 480px) { .wrap { padding: 0 20px; } }
 
-  /* ---------- LOG SECTION (below hero) ---------- */
-  .rule{ position: fixed; top:0; bottom:0; width:1px; background: var(--line); z-index:1; }
-  .rule.left{ left: calc(50% - 340px - 32px); }
-  .rule.right{ left: calc(50% + 340px + 32px); }
-  @media (max-width: 780px){ .rule{ display:none; } }
+    /* ── Masthead ──────────────────────────────────── */
+    .masthead {
+      padding: 52px 0 0;
+    }
+    .masthead-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline; flex-wrap: wrap; gap: 10px;
+      margin-bottom: 20px;
+    }
+    .wordmark {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-primary);
+    }
+    .wordmark .the {
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      text-transform: none;
+    }
+    .masthead-meta {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .masthead-meta .live-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.25;} }
 
-  .masthead-rule{ border: none; border-top: 3px double var(--line); margin: 0 0 44px; }
+    .masthead-rule {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0 0 52px;
+    }
 
-  .intro-kicker{
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.1em;
-    text-transform: uppercase; margin-bottom: 18px;
-  }
-  h2{
-    font-family: 'Spectral', serif; font-weight: 600; font-size: clamp(1.7rem, 3.5vw, 2.3rem);
-    margin-bottom: 22px; max-width: 18ch; letter-spacing: -0.01em;
-  }
-  .lede{ font-size: 1.02rem; color: var(--paper-dim); max-width: 50ch; line-height: 1.65; margin-bottom: 8px; }
+    /* ── Hero ──────────────────────────────────────── */
+    .hero { padding-bottom: 64px; }
+    .hero-kicker {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .hero-kicker::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
 
-  .log{ padding: 30px 0 10px; }
-  .log-hint{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.04em; margin-bottom: 6px; }
-  .entry{ padding: 30px 0; border-bottom: 1px dashed var(--line); }
-  .entry-clickable{ cursor: pointer; transition: background 0.2s; border-radius: 4px; }
-  .entry-clickable:hover, .entry-clickable:focus-visible{ background: var(--line-soft); outline: none; }
-  .entry-head{ display:flex; align-items: baseline; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
-  .entry-num{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.06em; }
-  .entry-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.06em; }
-  .entry-said{
-    font-family: 'Spectral', serif; font-size: 1.15rem; font-style: italic; color: var(--paper);
-    line-height: 1.6; margin-bottom: 10px; max-width: 46ch;
-  }
-  .entry-answer{
-    font-family: 'Spectral', serif; font-size: 0.92em; font-style: italic; color: var(--paper-dim);
-    line-height: 1.6; max-width: 46ch; opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease, max-height 0.3s ease;
-  }
-  .entry-clickable.revealed .entry-answer{ opacity: 0.85; max-height: 100px; margin-bottom: 4px; }
-  .entry-note{ display:flex; gap: 10px; align-items: flex-start; border-left: 2px solid var(--rust); margin-left: 2px; padding: 4px 0 4px 16px; }
-  .entry-note .mark{ font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--rust); letter-spacing: 0.08em; text-transform: uppercase; white-space:nowrap; padding-top: 2px;}
-  .entry-note p{ font-size: 0.94rem; color: var(--paper); line-height: 1.55; }
+    h1 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: clamp(2.2rem, 6.5vw, 3.75rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      margin-bottom: 22px;
+      max-width: 15ch;
+      color: var(--text-primary);
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
 
-  .debrief-combined{
-    margin: 8px 0 40px; padding: 30px 28px; border: 1px solid var(--rust); border-radius: 6px;
-    background: linear-gradient(180deg, rgba(168,84,62,0.08), rgba(168,84,62,0.02));
-    transition: opacity 0.3s;
-  }
-  .dc-head{ display:flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
-  .dc-tag{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--rust); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
-  .dc-date{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.05em; }
-  .dc-hint{ font-family:'IBM Plex Mono', monospace; font-size: 12px; color: var(--paper-dim); font-style: italic; }
-  .dc-body{ font-family:'Spectral', serif; font-size: 1.1rem; color: var(--paper); line-height: 1.7; max-width: 50ch; }
+    .hero-body {
+      font-size: 1.0625rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 48ch;
+    }
+    .hero-body strong { color: var(--text-primary); font-weight: 600; }
 
-  .your-entry{ padding: 44px 0 50px; }
-  .your-entry-head{ display:flex; align-items: baseline; gap: 14px; margin-bottom: 16px; }
-  .your-entry-num{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass-bright); letter-spacing: 0.06em; }
-  .your-entry-tag{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--paper-dim); letter-spacing: 0.06em; text-transform: uppercase; }
-  .prompt-line{ font-family:'Spectral', serif; font-size: 1.15rem; font-style: italic; color: var(--paper-dim); margin-bottom: 22px; max-width: 44ch; line-height: 1.5; }
+    /* ── Section divider ───────────────────────────── */
+    .section-rule {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 0;
+    }
 
-  .log-form{ border: 1px solid var(--line); border-radius: 4px; background: var(--bg-page); padding: 4px; }
-  .form-inner{ display:flex; align-items:stretch; }
-  .form-inner .at{ font-family:'IBM Plex Mono', monospace; color: var(--paper-dim); padding: 15px 4px 15px 16px; font-size: 0.95rem; }
-  input[type=email]{
-    flex: 1; min-width: 0; background: transparent; border: none; color: var(--paper);
-    padding: 15px 12px; font-size: 0.98rem; font-family: 'IBM Plex Mono', monospace; outline: none;
-  }
-  input[type=email]::placeholder{ color: var(--paper-dim); opacity: 0.6; }
-  button{
-    background: var(--brass); color: #14151B; border:none; padding: 0 26px; border-radius: 2px;
-    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.04em;
-    text-transform: uppercase; cursor: pointer; transition: background .2s; margin: 4px;
-    white-space: nowrap; flex-shrink: 0;
-  }
-  button:hover{ background: var(--brass-bright); }
-  button:focus-visible, input:focus-visible{ outline: 2px solid var(--brass-bright); outline-offset: 2px; }
-  .form-note{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--paper-dim); letter-spacing: 0.03em; margin-top: 12px; }
+    /* ── Record section ────────────────────────────── */
+    .record-section { padding: 60px 0 16px; }
 
-  @media (max-width: 420px){
-    .form-inner{ flex-direction: column; }
-    .form-inner .at{ display:none; }
-    input[type=email]{ padding: 13px 14px; }
-    button{ margin: 0; padding: 13px; }
-  }
-  .success-msg{ display:none; align-items:center; gap: 8px; color: var(--brass-bright); font-size: 0.92rem; margin-top: 16px; font-family:'IBM Plex Mono', monospace; }
-  .success-msg.show{ display:flex; }
+    .kicker {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
 
-  .margin-notes{ padding: 10px 0 50px; }
-  .mn-kicker{ font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--brass); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 30px; }
-  .mn-row{ display:grid; grid-template-columns: 32px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid var(--line-soft); }
-  .mn-row:first-of-type{ border-top: none; }
-  .mn-mark{ font-family:'Spectral', serif; font-style: italic; color: var(--brass); font-size: 1.2rem; padding-top: 2px; }
-  .mn-body h3{ font-family:'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 1rem; margin-bottom: 6px; }
-  .mn-body p{ font-size: 0.92rem; color: var(--paper-dim); line-height: 1.6; max-width: 46ch; }
+    h2 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--text-primary);
+      margin-bottom: 18px;
+      max-width: 22ch;
+    }
 
-  footer{
-    padding: 34px 0 60px; border-top: 3px double var(--line);
-    display:flex; justify-content: space-between; align-items:center; flex-wrap: wrap; gap: 14px;
-  }
-  .footer-mark{ font-family:'Spectral', serif; font-style: italic; font-size: 0.9rem; color: var(--paper-dim); }
-  .footer-stamp{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--paper-dim); }
+    .lede {
+      font-size: 0.9875rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 52ch;
+    }
 
-  ::selection{ background: var(--brass); color: #14151B; }
-</style>
+    /* ── Log entries ───────────────────────────────── */
+    .log { padding: 28px 0 8px; }
+
+    .log-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .entry {
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .entry:last-child { border-bottom: none; }
+
+    .entry-clickable {
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.2s;
+      padding: 28px 12px;
+      margin: 0 -12px;
+    }
+    .entry-clickable:hover { background: var(--surface); }
+    .entry-clickable:focus-visible {
+      outline: 1.5px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .entry-head {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .entry-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .entry-date {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+    }
+    .entry-tap-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-left: auto;
+      letter-spacing: 0.04em;
+      transition: opacity 0.2s;
+    }
+    .entry-clickable.revealed .entry-tap-hint { opacity: 0; }
+
+    .entry-said {
+      font-family: var(--font-sans);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      max-width: 50ch;
+      letter-spacing: -0.01em;
+    }
+    .entry-said::before {
+      content: '\201C';
+      color: var(--accent);
+      font-size: 1.05em;
+      margin-right: 1px;
+    }
+    .entry-said::after {
+      content: '\201D';
+      color: var(--accent);
+      font-size: 1.05em;
+      margin-left: 1px;
+    }
+
+    .entry-answer {
+      font-family: var(--font-mono);
+      font-size: 0.8375rem;
+      font-style: italic;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      max-width: 50ch;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.35s ease, max-height 0.35s ease;
+      padding-left: 1px;
+      border-left: 2px solid var(--border-hover);
+      padding-left: 14px;
+    }
+    .entry-clickable.revealed .entry-answer {
+      opacity: 1;
+      max-height: 120px;
+      margin-bottom: 4px;
+    }
+
+    /* ── Combined debrief card ─────────────────────── */
+    .debrief-combined {
+      margin: 12px 0 44px;
+      padding: 28px 24px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      transition: border-color 0.4s;
+      position: relative;
+      overflow: hidden;
+    }
+    .debrief-combined.unlocked {
+      border-color: var(--accent-border);
+      background: linear-gradient(160deg, rgba(16,185,129,0.06) 0%, var(--surface) 60%);
+    }
+    .debrief-combined::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, var(--accent-dim) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+    }
+    .debrief-combined.unlocked::before { opacity: 1; }
+
+    .dc-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .dc-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .dc-date {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+    }
+    .dc-hint {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      letter-spacing: 0.02em;
+    }
+    .dc-body {
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      color: var(--text-primary);
+      line-height: 1.75;
+      max-width: 52ch;
+      font-weight: 400;
+    }
+    .dc-body .dc-highlight {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 3px;
+      padding: 0.05em 0.3em;
+    }
+
+    /* ── Waitlist entry ────────────────────────────── */
+    .your-entry { padding: 52px 0 56px; }
+
+    .your-entry-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .your-entry-num {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+    .your-entry-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .prompt-line {
+      font-family: var(--font-sans);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      max-width: 46ch;
+      letter-spacing: -0.01em;
+    }
+
+    /* Form */
+    .log-form {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      padding: 4px;
+      transition: border-color 0.2s;
+    }
+    .log-form:focus-within { border-color: var(--accent-border); }
+
+    .form-inner { display: flex; align-items: stretch; }
+
+    .form-at {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      padding: 14px 4px 14px 14px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="email"] {
+      flex: 1;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      padding: 14px 12px;
+      font-size: 0.9375rem;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+    input[type="email"]::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-submit {
+      background: var(--accent);
+      color: #041a12;
+      border: none;
+      padding: 0 22px;
+      border-radius: 7px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .form-submit:hover { background: #34d399; }
+    .form-submit:active { transform: scale(0.97) translateY(1px); }
+    .form-submit:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 440px) {
+      .form-inner { flex-direction: column; }
+      .form-at { display: none; }
+      input[type="email"] { padding: 13px 14px; }
+      .form-submit { margin: 0; padding: 13px; border-radius: 0 0 7px 7px; }
+    }
+
+    .form-note {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      margin-top: 12px;
+      text-transform: uppercase;
+    }
+
+    .success-msg {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.875rem;
+      margin-top: 16px;
+    }
+    .success-msg .s-icon {
+      width: 18px; height: 18px;
+      border: 1.5px solid var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .success-msg .s-icon svg {
+      width: 10px; height: 10px;
+      stroke: var(--accent); fill: none; stroke-width: 2.5;
+    }
+    .success-msg.show { display: flex; }
+
+    /* ── Marginalia ────────────────────────────────── */
+    .margin-notes { padding: 8px 0 60px; }
+
+    .mn-kicker {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .mn-row {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 20px;
+      padding: 22px 0;
+      border-top: 1px solid var(--border-soft);
+    }
+    .mn-row:first-of-type { border-top: none; }
+
+    .mn-mark {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      padding-top: 2px;
+      letter-spacing: 0.02em;
+    }
+
+    .mn-body h3 {
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .mn-body p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      max-width: 48ch;
+    }
+
+    /* ── Footer ────────────────────────────────────── */
+    footer {
+      padding: 28px 0 56px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-mark {
+      font-family: var(--font-sans);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: -0.01em;
+    }
+    .footer-stamp {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+    }
+
+    ::selection { background: var(--accent); color: #041a12; }
+
+    /* ── Fade-in on load ───────────────────────────── */
+    @keyframes fadein {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .wrap { animation: fadein 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  </style>
 </head>
 <body>
 
-<div class="grain"></div>
-<div class="rule left"></div>
-<div class="rule right"></div>
-
-<section class="hero-static">
-  <div class="wrap">
-    <div class="masthead-row">
-      <div class="wordmark">NIGHT <span class="the">Debrief</span></div>
-      <div class="masthead-meta">IN DEVELOPMENT · COMING 2026</div>
-    </div>
-    <hr class="masthead-rule">
-
-    <div class="hero-static-body">
-      <div class="hero-kicker">The idea</div>
-      <h1>Say what you'll do.<br>Get <em>held to it</em>.</h1>
-      <p class="hero-body">Every night, it asks if you did the thing you said you'd do yesterday. Then it listens to your day. <strong>Five minutes of talking becomes a record that actually remembers.</strong></p>
-    </div>
-  </div>
-</section>
+<!-- Background -->
+<div class="mesh-bg" aria-hidden="true">
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+  <div class="mesh-blob"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
+<div class="rule left" aria-hidden="true"></div>
+<div class="rule right" aria-hidden="true"></div>
 
 <div class="wrap">
 
-  <section style="padding: 60px 0 10px;">
-    <div class="intro-kicker">The record</div>
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="masthead-row">
+      <div class="wordmark">NIGHT <span class="the">Debrief</span></div>
+      <div class="masthead-meta">
+        <div class="live-dot"></div>
+        In development &nbsp;&middot;&nbsp; Coming 2026
+      </div>
+    </div>
+    <hr class="masthead-rule" />
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-kicker">The idea</div>
+      <h1>Say what you'll do.<br>Get <em>held to it</em>.</h1>
+      <p class="hero-body">
+        Every night, it asks if you did the thing you said you'd do yesterday.
+        Then it listens to your day.
+        <strong>Five minutes of talking becomes a record that actually remembers.</strong>
+      </p>
+    </section>
+  </header>
+
+  <hr class="section-rule" />
+
+  <!-- The Record -->
+  <section class="record-section">
+    <div class="kicker">The record</div>
     <h2>One session. Three questions. Five minutes, before bed.</h2>
     <p class="lede">The first question checks in on what you said yesterday — no verdict, just a straight answer either way. The other two are new. That's the whole ritual.</p>
   </section>
 
-  <section class="log" aria-label="One night's session, three questions">
+  <!-- Log Entries -->
+  <section class="log" aria-label="One night's session — three questions">
     <p class="log-hint">Tap each question to hear how a real session plays out.</p>
+
     <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
-      <div class="entry-head"><span class="entry-num">Q1 — FOLLOWS UP ON LAST NIGHT</span><span class="entry-date">MAR 14, 11:41 PM</span></div>
-      <p class="entry-said">"Yesterday you said you'd hit the gym before the deck. Did that happen?"</p>
-      <p class="entry-answer">— "...no. Deck ran long, told myself I'd go tomorrow instead."</p>
+      <div class="entry-head">
+        <span class="entry-num">Q1 &mdash; Follows up on last night</span>
+        <span class="entry-date">Mar 14, 11:41 PM</span>
+        <span class="entry-tap-hint">tap to reveal</span>
+      </div>
+      <p class="entry-said">Yesterday you said you'd hit the gym before the deck. Did that happen?</p>
+      <p class="entry-answer">&mdash;&thinsp;no. Deck ran long, told myself I'd go tomorrow instead.</p>
     </div>
+
     <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
-      <div class="entry-head"><span class="entry-num">Q2 — NEW</span><span class="entry-date">MAR 14, 11:43 PM</span></div>
-      <p class="entry-said">"What's one thing today that actually went the way you wanted?"</p>
-      <p class="entry-answer">— "...honestly, the client call. Went better than I expected."</p>
+      <div class="entry-head">
+        <span class="entry-num">Q2 &mdash; New</span>
+        <span class="entry-date">Mar 14, 11:43 PM</span>
+        <span class="entry-tap-hint">tap to reveal</span>
+      </div>
+      <p class="entry-said">What's one thing today that actually went the way you wanted?</p>
+      <p class="entry-answer">&mdash;&thinsp;honestly, the client call. Went better than I expected.</p>
     </div>
+
     <div class="entry entry-clickable" tabindex="0" role="button" aria-expanded="false">
-      <div class="entry-head"><span class="entry-num">Q3 — NEW</span><span class="entry-date">MAR 14, 11:45 PM</span></div>
-      <p class="entry-said">"What are you telling yourself about tomorrow, right now?"</p>
-      <p class="entry-answer">— "...that tomorrow's the real start. Like today wasn't."</p>
+      <div class="entry-head">
+        <span class="entry-num">Q3 &mdash; New</span>
+        <span class="entry-date">Mar 14, 11:45 PM</span>
+        <span class="entry-tap-hint">tap to reveal</span>
+      </div>
+      <p class="entry-said">What are you telling yourself about tomorrow, right now?</p>
+      <p class="entry-answer">&mdash;&thinsp;that tomorrow's the real start. Like today wasn't.</p>
     </div>
   </section>
 
-  <section class="debrief-combined" id="debriefSection">
+  <!-- Combined Debrief -->
+  <div class="debrief-combined" id="debriefSection">
     <div class="dc-head">
-      <span class="dc-tag">Combined Debrief</span>
-      <span class="dc-date">MAR 14 — TONIGHT'S SESSION</span>
+      <span class="dc-tag">Combined debrief</span>
+      <span class="dc-date">Mar 14 &mdash; Tonight's session</span>
     </div>
-    <p class="dc-hint" id="dcHint">↑ Tap all three questions above to unlock tonight's debrief.</p>
-    <p class="dc-body" id="dcBody" style="display:none;">Second night the gym plan's slipped to "tomorrow" — and both times, it lost to something with someone else waiting on you. That's not a discipline problem, it's a scheduling one: the gym has no one waiting, so it's first to move. Try putting it before the thing with a deadline tomorrow, not after.</p>
-  </section>
+    <p class="dc-hint" id="dcHint">Tap all three questions above to unlock tonight's debrief.</p>
+    <p class="dc-body" id="dcBody" style="display:none;">
+      Second night the gym plan's slipped to &ldquo;tomorrow&rdquo; &mdash; and both times, it lost to something with <span class="dc-highlight">someone else waiting on you</span>. That's not a discipline problem, it's a scheduling one: the gym has no one waiting, so it's first to move. Try putting it before the thing with a deadline tomorrow, not after.
+    </p>
+  </div>
 
+  <hr class="section-rule" />
+
+  <!-- Waitlist -->
   <section class="your-entry">
-    <div class="your-entry-head"><span class="your-entry-num">ENTRY 000</span><span class="your-entry-tag">— Yours, whenever you're ready</span></div>
-    <p class="prompt-line">This could be your log. Leave your address, and we'll open it when it's ready.</p>
-    <form class="log-form" id="waitlistForm">
+    <div class="your-entry-head">
+      <span class="your-entry-num">Entry 000</span>
+      <span class="your-entry-tag">&mdash; Yours, whenever you're ready</span>
+    </div>
+    <p class="prompt-line">
+      This could be your log. Leave your address, and we'll open it when it's ready.
+    </p>
+    <form class="log-form" id="waitlistForm" novalidate>
       <div class="form-inner">
-        <span class="at">➜</span>
-        <input type="email" id="emailInput" placeholder="you@email.com" required aria-label="Email address">
-        <button type="submit">Reserve entry</button>
+        <span class="form-at">&#8594;</span>
+        <input
+          type="email"
+          id="emailInput"
+          placeholder="you@email.com"
+          required
+          aria-label="Email address"
+          autocomplete="email"
+        />
+        <button type="submit" class="form-submit">Reserve entry</button>
       </div>
     </form>
-    <p class="form-note">NO SPAM. ONE NOTE, WHEN IT'S LIVE.</p>
-    <div class="success-msg" id="successMsg">✓ Logged. Your entry's reserved — we'll write when it's ready.</div>
+    <p class="form-note">No spam &middot; One note, when it's live</p>
+    <div class="success-msg" id="successMsg">
+      <div class="s-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      Logged. Your entry's reserved — we'll write when it's ready.
+    </div>
   </section>
 
+  <hr class="section-rule" />
+
+  <!-- Marginalia -->
   <section class="margin-notes">
-    <div class="mn-kicker">Marginalia — how it works</div>
-    <div class="mn-row"><div class="mn-mark">i.</div><div class="mn-body"><h3>Talk, don't type</h3><p>Open it before bed and say what happened. No blank page. No prompts to overthink.</p></div></div>
-    <div class="mn-row"><div class="mn-mark">ii.</div><div class="mn-body"><h3>It remembers so you don't have to</h3><p>A notebook doesn't ask what happened to yesterday's plan. This does — every night, automatically, without you re-reading old pages.</p></div></div>
-    <div class="mn-row"><div class="mn-mark">iii.</div><div class="mn-body"><h3>It reads between the lines</h3><p>Across entries, it catches what repeats — and says so, in the margin, in plain language. No charts. Just the truth.</p></div></div>
-    <div class="mn-row"><div class="mn-mark">iv.</div><div class="mn-body"><h3>Yours, and only yours</h3><p>What you say stays in your log. Not sold, not shared, not used to train anything beyond your own record.</p></div></div>
-    <div class="mn-row"><div class="mn-mark">v.</div><div class="mn-body"><h3>No streaks to break</h3><p>Miss a night, skip a plan — it's just noted, not flagged. There's no score resetting to zero. Tomorrow starts clean either way.</p></div></div>
+    <div class="mn-kicker">Marginalia &mdash; how it works</div>
+
+    <div class="mn-row">
+      <div class="mn-mark">i.</div>
+      <div class="mn-body">
+        <h3>Talk, don't type</h3>
+        <p>Open it before bed and say what happened. No blank page. No prompts to overthink.</p>
+      </div>
+    </div>
+
+    <div class="mn-row">
+      <div class="mn-mark">ii.</div>
+      <div class="mn-body">
+        <h3>It remembers so you don't have to</h3>
+        <p>A notebook doesn't ask what happened to yesterday's plan. This does — every night, automatically, without you re-reading old pages.</p>
+      </div>
+    </div>
+
+    <div class="mn-row">
+      <div class="mn-mark">iii.</div>
+      <div class="mn-body">
+        <h3>It reads between the lines</h3>
+        <p>Across entries, it catches what repeats — and says so, in plain language. No charts. Just the truth.</p>
+      </div>
+    </div>
+
+    <div class="mn-row">
+      <div class="mn-mark">iv.</div>
+      <div class="mn-body">
+        <h3>Yours, and only yours</h3>
+        <p>What you say stays in your log. Not sold, not shared, not used to train anything beyond your own record.</p>
+      </div>
+    </div>
+
+    <div class="mn-row">
+      <div class="mn-mark">v.</div>
+      <div class="mn-body">
+        <h3>No streaks to break</h3>
+        <p>Miss a night, skip a plan — it's just noted, not flagged. There's no score resetting to zero. Tomorrow starts clean either way.</p>
+      </div>
+    </div>
   </section>
 
   <footer>
     <div class="footer-mark">Kept nightly. Read honestly.</div>
-    <div class="footer-stamp">© 2026 — NIGHT DEBRIEF</div>
+    <div class="footer-stamp">&copy; 2026 &mdash; Night Debrief</div>
   </footer>
 
-</div>
-
+</div><!-- /wrap -->
 
 <script>
-  function wireForm(formId, inputId, successId) {
-    const form = document.getElementById(formId);
-    const success = document.getElementById(successId);
+  // ── Waitlist form ──────────────────────────────────────
+  (function () {
+    const form    = document.getElementById('waitlistForm');
+    const input   = document.getElementById('emailInput');
+    const success = document.getElementById('successMsg');
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById(inputId).value;
+      const email = input.value.trim().toLowerCase();
       if (!email) return;
+
+      // Persist to storage if available (e.g. Antigravity KV)
       try {
-        const key = 'waitlist:' + email.toLowerCase().trim();
-        await window.storage.set(key, JSON.stringify({ email, joinedAt: new Date().toISOString() }), true);
+        const key = 'waitlist:' + email;
+        if (window.storage) {
+          await window.storage.set(key, JSON.stringify({ email, joinedAt: new Date().toISOString() }), true);
+        }
       } catch (err) {
         console.error('Storage error:', err);
       }
-      form.style.display = 'none';
+
+      form.style.opacity = '0';
+      form.style.transition = 'opacity 0.3s';
+      setTimeout(() => { form.style.display = 'none'; }, 300);
       success.classList.add('show');
     });
-  }
-  wireForm('waitlistForm', 'emailInput', 'successMsg');
+  })();
 
-  // Click-to-reveal log entries; unlock combined debrief once all three are opened
-  const entries = document.querySelectorAll('.entry-clickable');
-  const dcBody = document.getElementById('dcBody');
-  const dcHint = document.getElementById('dcHint');
+  // ── Click-to-reveal entries + unlock debrief ──────────
+  (function () {
+    const entries  = document.querySelectorAll('.entry-clickable');
+    const dcBody   = document.getElementById('dcBody');
+    const dcHint   = document.getElementById('dcHint');
+    const debrief  = document.getElementById('debriefSection');
 
-  function checkAllRevealed() {
-    const allRevealed = Array.from(entries).every(e => e.classList.contains('revealed'));
-    if (allRevealed) {
-      dcHint.style.display = 'none';
-      dcBody.style.display = 'block';
+    function checkAllRevealed() {
+      const all = Array.from(entries).every(e => e.classList.contains('revealed'));
+      if (all) {
+        dcHint.style.display = 'none';
+        dcBody.style.display = 'block';
+        debrief.classList.add('unlocked');
+      }
     }
-  }
 
-  entries.forEach(entry => {
-    const toggle = () => {
-      const isRevealed = entry.classList.toggle('revealed');
-      entry.setAttribute('aria-expanded', isRevealed);
-      checkAllRevealed();
-    };
-    entry.addEventListener('click', toggle);
-    entry.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    entries.forEach(entry => {
+      const toggle = () => {
+        const revealed = entry.classList.toggle('revealed');
+        entry.setAttribute('aria-expanded', revealed);
+        checkAllRevealed();
+      };
+
+      entry.addEventListener('click', toggle);
+      entry.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
     });
-  });
+  })();
 </script>
 
 </body>
 </html>
-
-
