@@ -115,17 +115,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const originalText = submitBtn.querySelector('.wf-submit-text').textContent;
       submitBtn.querySelector('.wf-submit-text').textContent = 'Securing...';
 
-      // Simulate network request
-      await new Promise(r => setTimeout(r, 800));
-
-      // Persist to storage if available (mock)
+      // Send to Formspree
+      const endpoint = 'https://formspree.io/f/mvzerlbd';
       try {
-        const key = 'waitlist:' + email;
-        if (window.storage) {
-          await window.storage.set(key, JSON.stringify({ email, joinedAt: new Date().toISOString() }), true);
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({ email: email })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Submission failed');
         }
       } catch (err) {
-        console.error('Storage error:', err);
+        console.error('Submission error:', err);
+        errorMsg.textContent = 'Something went wrong. Please try again.';
+        submitBtn.disabled = false;
+        submitBtn.querySelector('.wf-submit-text').textContent = originalText;
+        return;
       }
 
       // Transition to success state
